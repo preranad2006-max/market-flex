@@ -110,8 +110,26 @@ function Terminal() {
         <div className="flex flex-wrap items-center gap-4">
           <label className="flex items-center gap-2 text-sm">
             <Switch checked={live} onCheckedChange={setLive} />
-            Stream simulation
+            Live SSE feed
           </label>
+          <span
+            className={
+              streamStatus === "live"
+                ? "label-xs text-success"
+                : streamStatus === "error"
+                  ? "label-xs text-destructive"
+                  : "label-xs"
+            }
+          >
+            {streamStatus === "live"
+              ? `streaming · tick #${lastTick?.seq ?? 0}`
+              : streamStatus === "connecting"
+                ? "connecting…"
+                : streamStatus === "error"
+                  ? "feed disconnected"
+                  : "feed idle"}
+          </span>
+
           <label className="flex items-center gap-2 text-sm text-destructive">
             <Switch checked={killSwitch} onCheckedChange={setKillSwitch} />
             Global kill switch
