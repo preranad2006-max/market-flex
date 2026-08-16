@@ -52,7 +52,7 @@ function Terminal() {
   const [selected, setSelected] = useState<string>("");
   const [sim, setSim] = useState<SimState>({ stockPct: 120, compDropPct: 0, trafficMult: 1 });
 
-  const { status: streamStatus, lastTick } = useMarketStream(live, (tick) => {
+  const { status: streamStatus, lastTick, retryCount } = useMarketStream(live, (tick) => {
     setTicks(tick.seq);
     setCatalog((c) => tickMarket(c, tick.seed));
   });
