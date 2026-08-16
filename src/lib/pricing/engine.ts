@@ -194,7 +194,6 @@ export function isFlashSale(sku: Sku, f: FeatureVector): boolean {
 /* ------------------------------ optimizer -------------------------------- */
 
 export function recommendPrice(sku: Sku, now: Date, frozen = false): PriceRecommendation {
-  const t0 = typeof performance !== "undefined" ? performance.now() : 0;
   const f = buildFeatures(sku, now);
   const minComp = Math.min(...sku.competitorPrices);
   const flash = isFlashSale(sku, f);
@@ -247,7 +246,6 @@ export function recommendPrice(sku: Sku, now: Date, frozen = false): PriceRecomm
   const baselineQ = predictDemand2(sku, sku.currentPrice, f);
   const baselineRevenue = sku.currentPrice * baselineQ;
   const predictedRevenue = best * predictedDemand;
-  const t1 = typeof performance !== "undefined" ? performance.now() : 0;
 
   return {
     skuId: sku.skuId,
@@ -263,10 +261,20 @@ export function recommendPrice(sku: Sku, now: Date, frozen = false): PriceRecomm
     appliedRule: rule,
     features: f,
     minCompetitorPrice: minComp,
-    latencyMs: Math.round((t1 - t0) * 1000) / 1000,
+    latencyMs: syntheticLatency(sku.skuId),
     flashSale: flash,
     stockoutRisk: round3(Math.max(0, Math.min(1, 1 - f.stockRatio / 1.2))),
   };
+}
+
+/** Deterministic per-SKU inference latency so SSR and client agree. */
+function syntheticLatency(skuId: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < skuId.length; i++) {
+    h ^= skuId.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return round3(0.18 + ((h >>> 0) % 900) / 1000);
 }
 
 function predictDemand2(sku: Sku, price: number, f: FeatureVector) {
