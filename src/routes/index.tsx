@@ -52,7 +52,7 @@ function Terminal() {
   const [selected, setSelected] = useState<string>("");
   const [sim, setSim] = useState<SimState>({ stockPct: 120, compDropPct: 0, trafficMult: 1 });
 
-  const { status: streamStatus, lastTick } = useMarketStream(live, (tick) => {
+  const { status: streamStatus, lastTick, retryCount } = useMarketStream(live, (tick) => {
     setTicks(tick.seq);
     setCatalog((c) => tickMarket(c, tick.seed));
   });
@@ -118,17 +118,22 @@ function Terminal() {
                 ? "label-xs text-success"
                 : streamStatus === "error"
                   ? "label-xs text-destructive"
-                  : "label-xs"
+                  : streamStatus === "reconnecting"
+                    ? "label-xs text-warning"
+                    : "label-xs"
             }
           >
             {streamStatus === "live"
               ? `streaming · tick #${lastTick?.seq ?? 0}`
               : streamStatus === "connecting"
                 ? "connecting…"
-                : streamStatus === "error"
-                  ? "feed disconnected"
-                  : "feed idle"}
+                : streamStatus === "reconnecting"
+                  ? `reconnecting · attempt ${retryCount} · last tick #${lastTick?.seq ?? 0}`
+                  : streamStatus === "error"
+                    ? "feed disconnected"
+                    : "feed idle"}
           </span>
+
 
           <label className="flex items-center gap-2 text-sm text-destructive">
             <Switch checked={killSwitch} onCheckedChange={setKillSwitch} />

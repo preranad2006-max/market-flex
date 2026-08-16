@@ -15,8 +15,13 @@ export const Route = createFileRoute("/api/market-stream")({
           Math.max(500, Number(url.searchParams.get("interval") ?? 2000) || 2000),
         );
 
+        // Clients reconnecting after a drop pass ?since=<last seq> so the
+        // resumed feed keeps counting from where they left off.
+        const since = Math.max(0, Number(url.searchParams.get("since") ?? 0) || 0);
+
         const encoder = new TextEncoder();
-        let seq = 0;
+        let seq = since;
+
         let timer: ReturnType<typeof setInterval> | undefined;
 
         const stream = new ReadableStream<Uint8Array>({
