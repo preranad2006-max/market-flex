@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useMarketStream } from "@/hooks/useMarketStream";
+
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -50,14 +52,11 @@ function Terminal() {
   const [selected, setSelected] = useState<string>("");
   const [sim, setSim] = useState<SimState>({ stockPct: 120, compDropPct: 0, trafficMult: 1 });
 
-  useEffect(() => {
-    if (!live) return;
-    const id = setInterval(() => {
-      setTicks((t) => t + 1);
-      setCatalog((c) => tickMarket(c, 1000 + Math.floor(Date.now() / 1000)));
-    }, 2000);
-    return () => clearInterval(id);
-  }, [live]);
+  const { status: streamStatus, lastTick } = useMarketStream(live, (tick) => {
+    setTicks(tick.seq);
+    setCatalog((c) => tickMarket(c, tick.seed));
+  });
+
 
   const isFrozen = (s: Sku) =>
     killSwitch || frozenCats.has(s.category) || frozenSkus.has(s.skuId);
