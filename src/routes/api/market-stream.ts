@@ -36,7 +36,7 @@ export const Route = createFileRoute("/api/market-stream")({
               }
             };
 
-            send("hello", { intervalMs, ts: Date.now() });
+            send("hello", { intervalMs, heartbeatMs: HEARTBEAT_MS, ts: Date.now() });
 
             timer = setInterval(() => {
               seq += 1;
@@ -47,8 +47,20 @@ export const Route = createFileRoute("/api/market-stream")({
               });
             }, intervalMs);
 
+            // Keep-alive so proxies don't idle the stream out and the client
+            // can detect a silently dead connection.
+            heartbeat = setInterval(() => {
+              try {
+                controller.enqueue(encoder.encode(": ping\n\n"));
+              } catch {
+                /* stream already closed */
+              }
+              send("heartbeat", { seq, ts: Date.now() });
+            }, HEARTBEAT_MS);
+
             request.signal.addEventListener("abort", () => {
               if (timer) clearInterval(timer);
+              if (heartbeat) clearInterval(heartbeat);
               try {
                 controller.close();
               } catch {
