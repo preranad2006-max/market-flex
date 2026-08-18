@@ -5,6 +5,8 @@ import { createFileRoute } from "@tanstack/react-router";
  * Emits a deterministic tick seed every `intervalMs` so every connected
  * client advances the market simulation in lockstep.
  */
+const HEARTBEAT_MS = 15000;
+
 export const Route = createFileRoute("/api/market-stream")({
   server: {
     handlers: {
@@ -23,6 +25,7 @@ export const Route = createFileRoute("/api/market-stream")({
         let seq = since;
 
         let timer: ReturnType<typeof setInterval> | undefined;
+        let heartbeat: ReturnType<typeof setInterval> | undefined;
 
         const stream = new ReadableStream<Uint8Array>({
           start(controller) {
@@ -70,6 +73,7 @@ export const Route = createFileRoute("/api/market-stream")({
           },
           cancel() {
             if (timer) clearInterval(timer);
+            if (heartbeat) clearInterval(heartbeat);
           },
         });
 
