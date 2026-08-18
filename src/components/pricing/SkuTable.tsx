@@ -25,6 +25,42 @@ function ruleTone(rule: PriceRecommendation["appliedRule"]) {
   }
 }
 
+type Reason = "Elasticity" | "Clearance" | "Competitor" | "Floor" | "Frozen";
+
+function reasonFor(rec: PriceRecommendation): { label: Reason; detail: string } {
+  switch (rec.appliedRule) {
+    case "MANUAL_FREEZE":
+      return { label: "Frozen", detail: "manual hold" };
+    case "MARGIN_FLOOR":
+      return { label: "Floor", detail: "margin floor hit" };
+    case "COMPETITIVE_CEILING":
+      return { label: "Competitor", detail: "capped vs comp. min" };
+    case "CLEARANCE_PUSH":
+      return { label: "Clearance", detail: "overstock markdown" };
+    case "FLASH_SALE_SCARCITY":
+      return { label: "Competitor", detail: "scarcity premium" };
+    case "STOCKOUT_GUARD":
+      return { label: "Clearance", detail: "low stock guard" };
+    default:
+      return { label: "Elasticity", detail: `ε ${rec.elasticity.toFixed(2)} revenue peak` };
+  }
+}
+
+function reasonTone(label: Reason) {
+  switch (label) {
+    case "Clearance":
+      return "border-accent/40 bg-accent/10 text-accent";
+    case "Competitor":
+      return "border-warning/40 bg-warning/10 text-warning";
+    case "Floor":
+      return "border-destructive/40 bg-destructive/10 text-destructive";
+    case "Frozen":
+      return "border-border bg-muted text-muted-foreground";
+    default:
+      return "border-primary/40 bg-primary/10 text-primary";
+  }
+}
+
 export function SkuTable({ rows, selected, onSelect, frozen, onToggleFreeze }: Props) {
   return (
     <div className="panel overflow-hidden">
@@ -36,7 +72,7 @@ export function SkuTable({ rows, selected, onSelect, frozen, onToggleFreeze }: P
         <table className="w-full text-sm">
           <thead className="sticky top-0 z-10 bg-card">
             <tr className="border-b border-border text-left">
-              {["SKU", "Our price", "Comp. min", "Optimal", "Δ", "Stock", "ε", "Rule", ""].map((h) => (
+              {["SKU", "Our price", "Comp. min", "Optimal", "Δ", "Stock", "ε", "Rule", "Reason", ""].map((h) => (
                 <th key={h} className="label-xs px-4 py-2 font-normal whitespace-nowrap">
                   {h}
                 </th>
@@ -46,6 +82,7 @@ export function SkuTable({ rows, selected, onSelect, frozen, onToggleFreeze }: P
           <tbody>
             {rows.map(({ sku, rec }) => {
               const delta = ((rec.recommendedPrice - rec.currentPrice) / rec.currentPrice) * 100;
+              const reason = reasonFor(rec);
               const isSel = selected === sku.skuId;
               return (
                 <tr
@@ -86,6 +123,14 @@ export function SkuTable({ rows, selected, onSelect, frozen, onToggleFreeze }: P
                     <Badge variant="outline" className={cn("whitespace-nowrap", ruleTone(rec.appliedRule))}>
                       {RULE_LABEL[rec.appliedRule]}
                     </Badge>
+                  </td>
+                  <td className="px-4 py-2">
+                    <Badge variant="outline" className={cn("whitespace-nowrap", reasonTone(reason.label))}>
+                      {reason.label}
+                    </Badge>
+                    <div className="mt-1 text-xs whitespace-nowrap text-muted-foreground">
+                      {reason.detail}
+                    </div>
                   </td>
                   <td className="px-4 py-2 text-right">
                     <button
